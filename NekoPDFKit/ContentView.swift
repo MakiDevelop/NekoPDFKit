@@ -35,7 +35,7 @@ class PDFState: ObservableObject {
 }
 
 struct ImageGridView: View {
-    let images: [UIImage]
+    @Binding var images: [UIImage]
     let onDelete: (Int) -> Void
     
     var body: some View {
@@ -43,8 +43,8 @@ struct ImageGridView: View {
             LazyVGrid(columns: [
                 GridItem(.adaptive(minimum: 100, maximum: 150), spacing: 16)
             ], spacing: 16) {
-                ForEach(0..<images.count, id: \.self) { index in
-                    Image(uiImage: images[index])
+                ForEach(Array(images.enumerated()), id: \.offset) { index, image in
+                    Image(uiImage: image)
                         .resizable()
                         .scaledToFill()
                         .frame(width: 100, height: 100)
@@ -68,6 +68,9 @@ struct ImageGridView: View {
                             .padding(4),
                             alignment: .topTrailing
                         )
+                        .onDrag {
+                            NSItemProvider(object: "\(index)" as NSString)
+                        }
                 }
             }
             .padding()
@@ -78,6 +81,47 @@ struct ImageGridView: View {
                 .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 5)
         )
         .padding(.horizontal)
+        .onDrop(of: [.text], delegate: ImageDropDelegate(images: $images))
+    }
+}
+
+struct ImageDropDelegate: DropDelegate {
+    @Binding var images: [UIImage]
+    
+    func performDrop(info: DropInfo) -> Bool {
+        guard let itemProvider = info.itemProviders(for: [.text]).first else { return false }
+        
+        itemProvider.loadObject(ofClass: String.self) { (string, error) in
+            guard let fromIndexString = string as? String,
+                  let fromIndex = Int(fromIndexString),
+                  let toIndex = getDestinationIndex(info: info) else {
+                return
+            }
+            
+            if fromIndex != toIndex {
+                DispatchQueue.main.async {
+                    withAnimation {
+                        let image = images.remove(at: fromIndex)
+                        images.insert(image, at: toIndex)
+                    }
+                }
+            }
+        }
+        return true
+    }
+    
+    private func getDestinationIndex(info: DropInfo) -> Int? {
+        let location = info.location
+        let gridWidth: CGFloat = 100 + 16 // 圖片寬度 + 間距
+        let gridHeight: CGFloat = 100 + 16 // 圖片高度 + 間距
+        
+        let column = Int(location.x / gridWidth)
+        let row = Int(location.y / gridHeight)
+        
+        let totalColumns = Int(UIScreen.main.bounds.width / gridWidth)
+        let index = row * totalColumns + column
+        
+        return index < images.count ? index : nil
     }
 }
 
@@ -201,9 +245,12 @@ struct ContentView: View {
                             }
                             .padding(.bottom, 20)
                         } else {
-                            ImageGridView(images: selectedImages) { index in
-                                selectedImages.remove(at: index)
-                            }
+                            ImageGridView(
+                                images: $selectedImages,
+                                onDelete: { index in
+                                    selectedImages.remove(at: index)
+                                }
+                            )
                         }
                         
                         ActionButtonsView(

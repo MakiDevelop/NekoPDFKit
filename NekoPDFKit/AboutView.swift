@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct AboutView: View {
+    @State private var showingPrivacyPolicy = false
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
@@ -74,6 +76,13 @@ struct AboutView: View {
                     
                     Text("NekoPDFKit 重視您的隱私。我們不會收集或存儲您的任何個人數據。所有文件處理都在本地完成。")
                         .foregroundColor(.secondary)
+                    
+                    Button(action: {
+                        showingPrivacyPolicy = true
+                    }) {
+                        Text("查看完整隱私政策")
+                            .foregroundColor(.blue)
+                    }
                 }
                 .padding()
                 .background(Color(.systemBackground))
@@ -86,6 +95,11 @@ struct AboutView: View {
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle("關於")
+        .sheet(isPresented: $showingPrivacyPolicy) {
+            NavigationView {
+                PrivacyPolicyView()
+            }
+        }
     }
 }
 
