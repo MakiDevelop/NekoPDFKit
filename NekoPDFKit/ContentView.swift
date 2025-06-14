@@ -7,6 +7,7 @@
 
 import SwiftUI
 import PhotosUI
+import PDFKit
 
 class PDFState: ObservableObject {
     @Published var pdfData: Data?
@@ -37,6 +38,9 @@ struct ContentView: View {
     @State private var selectedImages: [UIImage] = []
     @State private var selectedItems: [PhotosPickerItem] = []
     @State private var showingPDFPreview = false
+    @State private var pdfData: Data?
+    @State private var isGenerating = false
+    @State private var showingPDFMerge = false
     @StateObject private var pdfState = PDFState()
     
     var body: some View {
@@ -44,19 +48,39 @@ struct ContentView: View {
             VStack {
                 if selectedImages.isEmpty {
                     ContentUnavailableView {
-                        Label("沒有圖片", systemImage: "photo.on.rectangle")
+                        Label("沒有圖片", systemImage: "photo.fill")
                     } description: {
                         Text("點擊下方按鈕選擇圖片")
                     }
                 } else {
-                    PreviewGridView(images: $selectedImages)
+                    ScrollView {
+                        LazyVGrid(columns: [
+                            GridItem(.adaptive(minimum: 100, maximum: 150), spacing: 16)
+                        ], spacing: 16) {
+                            ForEach(0..<selectedImages.count, id: \.self) { index in
+                                Image(uiImage: selectedImages[index])
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 100, height: 100)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    .contextMenu {
+                                        Button(role: .destructive) {
+                                            selectedImages.remove(at: index)
+                                        } label: {
+                                            Label("刪除", systemImage: "trash")
+                                        }
+                                    }
+                            }
+                        }
+                        .padding()
+                    }
                 }
                 
                 HStack(spacing: 20) {
                     PhotosPicker(selection: $selectedItems,
                                maxSelectionCount: 0,
                                matching: .images) {
-                        Label("選擇圖片", systemImage: "photo.on.rectangle")
+                        Label("選擇圖片", systemImage: "photo.fill")
                             .padding()
                             .frame(maxWidth: .infinity)
                             .background(Color.blue)
@@ -88,17 +112,29 @@ struct ContentView: View {
                                 .foregroundColor(.white)
                                 .cornerRadius(10)
                         }
-                        .disabled(pdfState.isGenerating)
+                        .disabled(isGenerating)
                     }
                 }
                 .padding()
+                
+                Button(action: {
+                    showingPDFMerge = true
+                }) {
+                    Label("PDF合併", systemImage: "doc.fill.badge.plus")
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(Color.orange)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
+                .padding(.horizontal)
             }
             .navigationTitle("NekoPDFKit")
             .sheet(isPresented: $showingPDFPreview) {
                 Group {
-                    if pdfState.isGenerating {
+                    if isGenerating {
                         ProgressView("Generating PDF...")
-                    } else if let data = pdfState.pdfData {
+                    } else if let data = pdfData {
                         PDFPreviewView(pdfData: data)
                             .onAppear {
                                 print("PDFPreviewView appeared with data size: \(data.count) bytes")
@@ -116,13 +152,35 @@ struct ContentView: View {
                     }
                 }
             }
+            .sheet(isPresented: $showingPDFMerge) {
+                PDFMergeView()
+            }
         }
     }
     
     private func generateAndShowPDF() {
-        print("Starting PDF generation with \(selectedImages.count) images")
-        showingPDFPreview = true
-        pdfState.generatePDF(from: selectedImages)
+        isGenerating = true
+        
+        // 創建 PDF 文檔
+        let pdfDocument = PDFDocument()
+        
+        // 遍歷所有圖片
+        for (index, image) in selectedImages.enumerated() {
+            print("Processing image \(index + 1) of \(selectedImages.count)")
+            
+            // 創建 PDF 頁面
+            if let page = PDFPage(image: image) {
+                pdfDocument.insert(page, at: index)
+            }
+        }
+        
+        // 生成 PDF 數據
+        if let data = pdfDocument.dataRepresentation() {
+            pdfData = data
+            showingPDFPreview = true
+        }
+        
+        isGenerating = false
     }
 }
 
