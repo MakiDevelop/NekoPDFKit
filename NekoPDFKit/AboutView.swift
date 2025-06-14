@@ -6,15 +6,12 @@ struct AboutView: View {
             VStack(spacing: 24) {
                 // App Logo and Name
                 VStack(spacing: 16) {
-                    Image(systemName: "doc.text.fill")
-                        .font(.system(size: 80))
-                        .foregroundColor(.blue)
-                        .padding()
-                        .background(
-                            Circle()
-                                .fill(Color.blue.opacity(0.1))
-                                .frame(width: 160, height: 160)
-                        )
+                    Image("NekoPDFKitBG")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 200)
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                        .shadow(radius: 5)
                     
                     Text("NekoPDFKit")
                         .font(.largeTitle)
@@ -50,7 +47,7 @@ struct AboutView: View {
                         HStack {
                             Image(systemName: "envelope.fill")
                                 .foregroundColor(.blue)
-                            Text("support@nekopdfkit.com")
+                            Text("makiakatsu@gmail.com")
                                 .foregroundColor(.blue)
                         }
                     }

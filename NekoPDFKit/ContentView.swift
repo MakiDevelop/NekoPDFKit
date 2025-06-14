@@ -48,25 +48,36 @@ struct ImageGridView: View {
                         .resizable()
                         .scaledToFill()
                         .frame(width: 100, height: 100)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .shadow(radius: 2)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 12)
+                            RoundedRectangle(cornerRadius: 16)
                                 .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
                         )
-                        .contextMenu {
-                            Button(role: .destructive) {
+                        .overlay(
+                            Button(action: {
                                 withAnimation {
                                     onDelete(index)
                                 }
-                            } label: {
-                                Label("刪除", systemImage: "trash")
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(.white)
+                                    .shadow(radius: 1)
                             }
-                        }
+                            .padding(4),
+                            alignment: .topTrailing
+                        )
                 }
             }
             .padding()
         }
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 5)
+        )
+        .padding(.horizontal)
     }
 }
 
@@ -83,44 +94,76 @@ struct ActionButtonsView: View {
                 PhotosPicker(selection: $selectedItems,
                            maxSelectionCount: 0,
                            matching: .images) {
-                    Label("選擇圖片", systemImage: "photo.fill")
-                        .font(.headline)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
-                        .shadow(radius: 2)
+                    HStack {
+                        Image(systemName: "photo.fill")
+                        Text("選擇圖片")
+                    }
+                    .font(.headline)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.blue, Color.blue.opacity(0.8)]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .foregroundColor(.white)
+                    .cornerRadius(16)
+                    .shadow(color: .blue.opacity(0.3), radius: 5, x: 0, y: 2)
                 }
                 
                 if hasImages {
                     Button(action: onGenerate) {
-                        Label("預覽PDF", systemImage: "doc.fill")
-                            .font(.headline)
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(Color.green)
-                            .foregroundColor(.white)
-                            .cornerRadius(12)
-                            .shadow(radius: 2)
+                        HStack {
+                            Image(systemName: "doc.fill")
+                            Text("預覽PDF")
+                        }
+                        .font(.headline)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.green, Color.green.opacity(0.8)]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .foregroundColor(.white)
+                        .cornerRadius(16)
+                        .shadow(color: .green.opacity(0.3), radius: 5, x: 0, y: 2)
                     }
                     .disabled(isGenerating)
                 }
             }
             
             Button(action: onMerge) {
-                Label("PDF合併", systemImage: "doc.fill.badge.plus")
-                    .font(.headline)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(Color.orange)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
-                    .shadow(radius: 2)
+                HStack {
+                    Image(systemName: "doc.fill.badge.plus")
+                    Text("PDF合併")
+                }
+                .font(.headline)
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color.orange, Color.orange.opacity(0.8)]),
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .foregroundColor(.white)
+                .cornerRadius(16)
+                .shadow(color: .orange.opacity(0.3), radius: 5, x: 0, y: 2)
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 5)
+        )
+        .padding(.horizontal)
     }
 }
 
@@ -136,33 +179,51 @@ struct ContentView: View {
     var body: some View {
         TabView {
             NavigationStack {
-                VStack(spacing: 0) {
-                    if selectedImages.isEmpty {
-                        ContentUnavailableView {
-                            Label("沒有圖片", systemImage: "photo.fill")
-                        } description: {
-                            Text("點擊下方按鈕選擇圖片")
-                        }
-                        .padding(.bottom, 20)
-                    } else {
-                        ImageGridView(images: selectedImages) { index in
-                            selectedImages.remove(at: index)
-                        }
-                    }
+                ZStack {
+                    Color(.systemGroupedBackground)
+                        .ignoresSafeArea()
                     
-                    ActionButtonsView(
-                        selectedItems: $selectedItems,
-                        hasImages: !selectedImages.isEmpty,
-                        isGenerating: isGenerating,
-                        onGenerate: generateAndShowPDF,
-                        onMerge: { showingPDFMerge = true }
-                    )
+                    VStack(spacing: 0) {
+                        if selectedImages.isEmpty {
+                            VStack(spacing: 20) {
+                                Image("NekoPDFKitBG")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(height: 200)
+                                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                                    .shadow(radius: 5)
+                                
+                                ContentUnavailableView {
+                                    Label("沒有圖片", systemImage: "photo.fill")
+                                } description: {
+                                    Text("點擊下方按鈕選擇圖片")
+                                }
+                            }
+                            .padding(.bottom, 20)
+                        } else {
+                            ImageGridView(images: selectedImages) { index in
+                                selectedImages.remove(at: index)
+                            }
+                        }
+                        
+                        ActionButtonsView(
+                            selectedItems: $selectedItems,
+                            hasImages: !selectedImages.isEmpty,
+                            isGenerating: isGenerating,
+                            onGenerate: generateAndShowPDF,
+                            onMerge: { showingPDFMerge = true }
+                        )
+                    }
                 }
                 .navigationTitle("NekoPDFKit")
                 .sheet(isPresented: $showingPDFPreview) {
                     Group {
                         if isGenerating {
                             ProgressView("Generating PDF...")
+                                .padding()
+                                .background(Color(.systemBackground))
+                                .cornerRadius(16)
+                                .shadow(radius: 5)
                         } else if let data = pdfData {
                             PDFPreviewView(pdfData: data)
                                 .onAppear {
@@ -173,11 +234,16 @@ struct ContentView: View {
                                 }
                         } else if let error = pdfState.error {
                             Text("Error: \(error.localizedDescription)")
+                                .padding()
+                                .background(Color(.systemBackground))
+                                .cornerRadius(16)
+                                .shadow(radius: 5)
                         } else {
                             Text("No PDF data available")
-                                .onAppear {
-                                    print("No PDF data available")
-                                }
+                                .padding()
+                                .background(Color(.systemBackground))
+                                .cornerRadius(16)
+                                .shadow(radius: 5)
                         }
                     }
                 }
