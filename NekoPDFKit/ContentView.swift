@@ -91,8 +91,8 @@ struct ImageDropDelegate: DropDelegate {
     func performDrop(info: DropInfo) -> Bool {
         guard let itemProvider = info.itemProviders(for: [.text]).first else { return false }
         
-        itemProvider.loadObject(ofClass: String.self) { (string, error) in
-            guard let fromIndexString = string as? String,
+        _ = itemProvider.loadObject(ofClass: String.self) { (string, error) in
+            guard let fromIndexString = string,
                   let fromIndex = Int(fromIndexString),
                   let toIndex = getDestinationIndex(info: info) else {
                 return
@@ -131,6 +131,7 @@ struct ActionButtonsView: View {
     let isGenerating: Bool
     let onGenerate: () -> Void
     let onMerge: () -> Void
+    let onClear: () -> Void
     
     var body: some View {
         VStack(spacing: 16) {
@@ -181,24 +182,45 @@ struct ActionButtonsView: View {
                 }
             }
             
-            Button(action: onMerge) {
-                HStack {
-                    Image(systemName: "doc.fill.badge.plus")
-                    Text("PDF合併")
-                }
-                .font(.headline)
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(
-                    LinearGradient(
-                        gradient: Gradient(colors: [Color.orange, Color.orange.opacity(0.8)]),
-                        startPoint: .leading,
-                        endPoint: .trailing
+            HStack(spacing: 16) {
+                Button(action: onMerge) {
+                    HStack {
+                        Image(systemName: "doc.text.badge.plus")
+                        Text("合併PDF")
+                    }
+                    .font(.headline)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.orange, Color.orange.opacity(0.8)]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
                     )
-                )
-                .foregroundColor(.white)
-                .cornerRadius(16)
-                .shadow(color: .orange.opacity(0.3), radius: 5, x: 0, y: 2)
+                    .foregroundColor(.white)
+                    .cornerRadius(16)
+                    .shadow(color: .orange.opacity(0.3), radius: 5, x: 0, y: 2)
+                }
+
+                if hasImages {
+                    Button(action: onClear) {
+                        Label("清除", systemImage: "trash")
+                            .font(.headline)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color.red, Color.red.opacity(0.8)]),
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .foregroundColor(.white)
+                            .cornerRadius(16)
+                            .shadow(color: .red.opacity(0.3), radius: 5, x: 0, y: 2)
+                    }
+                }
             }
         }
         .padding()
@@ -217,7 +239,7 @@ struct ContentView: View {
     @State private var showingPDFPreview = false
     @State private var pdfData: Data?
     @State private var isGenerating = false
-    @State private var showingPDFMerge = false
+    @State private var showingMergeView = false
     @StateObject private var pdfState = PDFState()
     
     var body: some View {
@@ -258,7 +280,12 @@ struct ContentView: View {
                             hasImages: !selectedImages.isEmpty,
                             isGenerating: isGenerating,
                             onGenerate: generateAndShowPDF,
-                            onMerge: { showingPDFMerge = true }
+                            onMerge: { showingMergeView = true },
+                            onClear: {
+                                withAnimation {
+                                    selectedImages.removeAll()
+                                }
+                            }
                         )
                     }
                 }
@@ -294,8 +321,8 @@ struct ContentView: View {
                         }
                     }
                 }
-                .sheet(isPresented: $showingPDFMerge) {
-                    PDFMergeView()
+                .sheet(isPresented: $showingMergeView) {
+                    MergeView()
                 }
                 .onChange(of: selectedItems) { oldValue, newItems in
                     Task {
